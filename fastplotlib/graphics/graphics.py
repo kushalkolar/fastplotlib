@@ -56,6 +56,7 @@ class Image(_Graphic):
             vmin: int = None,
             vmax: int = None,
             cmap: str = 'plasma',
+            filter: str = 'nearest',
             *args,
             **kwargs
     ):
@@ -64,8 +65,10 @@ class Image(_Graphic):
         if (vmin is None) or (vmax is None):
             vmin, vmax = quick_min_max(data)
 
+        self._texture = pygfx.Texture(self.data, dim=2)
+
         self.world_object: pygfx.Image = pygfx.Image(
-            pygfx.Geometry(grid=pygfx.Texture(self.data, dim=2)),
+            pygfx.Geometry(grid=self._texture.get_view(filter='nearest')),
             pygfx.ImageBasicMaterial(clim=(vmin, vmax), map=get_cmap_texture(cmap))
         )
 
@@ -78,8 +81,9 @@ class Image(_Graphic):
         self.world_object.material.clim = levels
 
     def update_data(self, data: np.ndarray):
-        self.world_object.geometry.grid.data[:] = data
-        self.world_object.geometry.grid.update_range((0, 0, 0), self.world_object.geometry.grid.size)
+        self.world_object.geometry.grid.texture.data[:] = data
+        self._texture.update_range((0, 0, 0), self._texture.size)
+        # self.world_object.geometry.grid.update_range((0, 0, 0), self.world_object.geometry.grid.size)
 
     def update_cmap(self, cmap: str, alpha: float = 1.0):
         self.world_object.material.map = get_cmap_texture(name=cmap)
